@@ -12,11 +12,11 @@ export default function Login() {
     e.preventDefault()
     setError('')
     try {
-      const response = await fetch('http://localhost:800/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      })
+      const response = await fetch("https://task-pilot-xi8z.vercel.app/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
       const data = await response.json()
       if (response.ok) {
         Cookies.set('token', data.token, { expires: 7 })

@@ -18,7 +18,9 @@ export default function Abc({ projectId, role, onBack }) {
 
   const fetchProject = async () => {
     try {
-      const res = await fetch(`http://localhost:800/project/${projectId}`);
+      const res = await fetch(
+        `https://task-pilot-xi8z.vercel.app/project/${projectId}`
+      );
       const data = await res.json();
       setProject(data);
     } catch (err) {
@@ -30,7 +32,7 @@ export default function Abc({ projectId, role, onBack }) {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('http://localhost:800/user');
+      const res = await fetch("https://task-pilot-xi8z.vercel.app/user");
       const data = await res.json();
       setAllUsers(data);
     } catch (err) {
@@ -39,40 +41,43 @@ export default function Abc({ projectId, role, onBack }) {
   };
 
   const handleAddUser = async () => {
-    setError('');
+    setError("");
 
     const user = allUsers.find(
-      u => u.name.toLowerCase() === username.trim().toLowerCase()
+      (u) => u.name.toLowerCase() === username.trim().toLowerCase()
     );
 
     if (!user) {
-      setError('User not found');
+      setError("User not found");
       return;
     }
 
     try {
-      const token = Cookies.get('token');
+      const token = Cookies.get("token");
 
-      const res = await fetch(`http://localhost:800/project/${projectId}/add-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user._id,
-          token,
-        }),
-      });
+      const res = await fetch(
+        `https://task-pilot-xi8z.vercel.app/project/${projectId}/add-user`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: user._id,
+            token,
+          }),
+        }
+      );
 
       if (!res.ok) {
-        throw new Error('Failed to add user');
+        throw new Error("Failed to add user");
       }
 
-      setUsername('');
+      setUsername("");
       fetchProject(); // refresh members
     } catch (err) {
       console.error(err);
-      setError('Could not add user');
+      setError("Could not add user");
     }
   };
 

@@ -42,7 +42,7 @@ export default function Signup() {
   }
 
   try {
-    const response = await fetch("http://localhost:800/signup", {
+    const response = await fetch("https://task-pilot-xi8z.vercel.app/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(formData),

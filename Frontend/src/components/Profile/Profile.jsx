@@ -19,12 +19,15 @@ export default function Profile() {
     try {
       const token = Cookies.get("token");
 
-      const res = await fetch(`http://localhost:800/project/${projectId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch(
+        `https://task-pilot-xi8z.vercel.app/project/${projectId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!res.ok) throw new Error("Failed to delete project");
 
@@ -39,7 +42,7 @@ export default function Profile() {
     try {
       const token = Cookies.get("token");
 
-      const res = await fetch("http://localhost:800/project/my", {
+      const res = await fetch("https://task-pilot-xi8z.vercel.app/project/my", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -63,39 +66,39 @@ export default function Profile() {
   };
 
   const handleCreateProject = async ({ name }) => {
-  try {
-    const token = Cookies.get("token");
+    try {
+      const token = Cookies.get("token");
 
-    const res = await fetch("http://localhost:800/project", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name,
-        token, // ✅ send token in body
-      }),
-    });
+      const res = await fetch("https://task-pilot-xi8z.vercel.app/project", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          token, // ✅ send token in body
+        }),
+      });
 
-    if (!res.ok) throw new Error("Failed to create project");
+      if (!res.ok) throw new Error("Failed to create project");
 
-    const project = await res.json();
+      const project = await res.json();
 
-    setProjects((prev) => [
-      {
-        id: project._id,
-        name: project.name,
-        description: project.description || "",
-        role: "Master",
-      },
-      ...prev,
-    ]);
+      setProjects((prev) => [
+        {
+          id: project._id,
+          name: project.name,
+          description: project.description || "",
+          role: "Master",
+        },
+        ...prev,
+      ]);
 
-    setShowModal(false);
-  } catch (err) {
-    console.error(err);
-  }
-};
+      setShowModal(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
 
   if (loading) {
