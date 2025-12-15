@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import Cookies from 'js-cookie'
 import { Search, Plus, Filter, Calendar, Clock, Flag, User, MoreHorizontal, X, Save, Sparkles, RotateCcw } from "lucide-react";
-import { sampleTasks, getNextTaskId, addTimestamps } from "../data/sampleTasks";
-import { columns, priorities, priorityOptions, statusOptions } from "../data/taskConfig";
-import { generateTaskDetails, generateDeveloperRating } from "../../llm_invoke";
-import { loadTasks, saveTasks } from "../data/taskStorage";
+import { sampleTasks, getNextTaskId, addTimestamps } from "./sampleTasks";
+import { columns, priorities, priorityOptions, statusOptions } from "./taskConfig";
+import { generateTaskDetails } from "../../../llm_invoke";
+import { loadTasks, saveTasks } from "./taskStorage";
 
 function TaskCard({ task, moveTask, deleteTask, editTask, onDragStart, onDragEnd }) {
   const [showDetails, setShowDetails] = useState(false);
@@ -148,7 +148,7 @@ function TaskCard({ task, moveTask, deleteTask, editTask, onDragStart, onDragEnd
 
         {/* Edit Modal */}
         {showEditModal && (
-          <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50" onClick={handleCancelEdit}>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCancelEdit}>
             <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-800">Edit Task</h3>
@@ -383,7 +383,7 @@ function Column({ column, tasks, moveTask, deleteTask, editTask, onDrop, onDragO
   );
 }
 
-export default function Kanban({name}) {
+export default function Kan({name}) {
   const isLogged = Boolean(Cookies.get('token'));
   if (!isLogged) {
     return (
@@ -398,10 +398,6 @@ export default function Kanban({name}) {
   const [tasks, setTasks] = useState(() => loadTasks(sampleTasks));
   const [draggedTask, setDraggedTask] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [developerRatings, setDeveloperRatings] = useState( () => {
-    const saved = localStorage.getItem("developer_ratings");
-    return saved ? JSON.parse(saved) : [];
-  })
   const [filterPriority, setFilterPriority] = useState("");
   const [filterAssignee, setFilterAssignee] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -417,7 +413,6 @@ export default function Kanban({name}) {
     impactScore: null,
   });
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [isRatingLoading, setIsRatingLoading] = useState(false);
 
   useEffect(() => {
   saveTasks(tasks);
@@ -488,19 +483,27 @@ export default function Kanban({name}) {
 
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
-      setTasks((prev) =>
-        prev.map((task) => {
-          if (new Date(task.deadline) < now && task.status !== "done") {
-            return { ...task, status: "backlog" };
-          }
-          return task;
-        })
-      );
-    }, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  const applyOverdue = () => {
+    const now = new Date();
+    setTasks((prev) =>
+      prev.map((task) => {
+        if (new Date(task.deadline) < now && task.status !== "done") {
+          return { ...task, status: "backlog" };
+        }
+        return task;
+      })
+    );
+  };
+
+  // run immediately on mount
+  applyOverdue();
+
+  // then every minute
+  const interval = setInterval(applyOverdue, 60);
+
+  return () => clearInterval(interval);
+}, []);
+
 
   const moveTask = (taskId, newStatus) => {
     setTasks((prev) =>
@@ -585,7 +588,6 @@ export default function Kanban({name}) {
   });
 
   const uniqueAssignees = [...new Set(tasks.map(task => task.assignee).filter(Boolean))];
-  const [showRatingModal, setShowRatingModal] = useState(false);
 
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100">
@@ -594,7 +596,6 @@ export default function Kanban({name}) {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-gray-800">{name}</h1>
-            <div className="flex gap-3">
             <button
               onClick={() => setShowAddForm(!showAddForm)}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition"
@@ -602,32 +603,6 @@ export default function Kanban({name}) {
               <Plus size={18} />
               Add Task
             </button>
-
-            <button
-              className="bg-purple-100 hover:bg-purple-200 text-purple-700 px-4 py-2 rounded-lg transition flex items-center gap-2"
-              onClick={ async () => {
-                setShowRatingModal(true);
-                setIsRatingLoading(true);
-                try {
-                  const storedTasks = localStorage.getItem("kanban_tasks");
-                  // invoke llm
-                  const kanbanData = JSON.parse(storedTasks);
-                  const generated_developer_ratings = await generateDeveloperRating(kanbanData);
-                  setDeveloperRatings(generated_developer_ratings);
-                  localStorage.setItem("developer_ratings", JSON.stringify(generated_developer_ratings));
-                  console.log("Generated Developer Ratings: \n", generated_developer_ratings);
-                } catch (error) {
-                  console.error("Failed to generate ratings", error);
-                } finally {
-                  setIsRatingLoading(false);
-                }
-              }
-              }
-            >
-              <Sparkles size={18} />
-              Developer Rating
-            </button>
-            </div>
           </div>
           
           {/* Filters */}
@@ -813,60 +788,6 @@ export default function Kanban({name}) {
           </div>
         </div>
       )}
-
-    {showRatingModal && (
-      <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
-        {/* Increased width (max-w-3xl) and height (max-h-[85vh]) for the list */}
-        <div className="bg-white rounded-xl p-6 w-full max-w-3xl shadow-2xl relative max-h-[85vh] flex flex-col">
-          
-          <button 
-            onClick={() => setShowRatingModal(false)}
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition"
-          >
-            <X size={20} />
-          </button>
-
-          <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-            <Sparkles className="text-purple-600" />
-            Developer Ratings
-          </h2>
-          
-          {/* Scrollable Area */}
-          <div className="overflow-y-auto pr-2 space-y-4">
-            {isRatingLoading ? (
-              <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                <Sparkles className="animate-spin mb-3 text-purple-500" size={32} />
-                <p>Analyzing performance metrics...</p>
-              </div>
-            ) : (
-              developerRatings.map((rating, index) => (
-              <div 
-                key={index} 
-                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-gray-50/50 animate-fade-in-up"
-                style={{ animationDelay: `${index * 150}ms` }}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-semibold text-lg text-gray-800">{rating.name}</h3>
-                  
-                  {/* Color-coded Badge */}
-                  <div className={`px-3 py-1 rounded-full text-sm font-bold ${
-                    rating.developerRating >= 8 ? 'bg-green-100 text-green-700' :
-                    rating.developerRating >= 7 ? 'bg-blue-100 text-blue-700' :
-                    'bg-orange-100 text-orange-700'
-                  }`}>
-                    {rating.developerRating} / 10
-                  </div>
-                </div>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  {rating.justification}
-                </p>
-              </div>
-            ))
-            )}
-          </div>
-        </div>
-      </div>
-    )}
 
       {/* Kanban Board */}
       <div className="flex-1 p-4 overflow-hidden">

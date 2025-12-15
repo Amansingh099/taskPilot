@@ -5,6 +5,9 @@ import Kanban from './components/Kanban';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import Profiles from './components/Profiles';
+import Profile from './components/Profile/Profile';
+import Landing from './components/Landing';
+import Kan from './components/empKan/Kan';
 
 export default function App() {
   return (
@@ -18,6 +21,9 @@ export default function App() {
           <Route path="/profiles" element={<Profiles />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/profile" element={<Profile/>}></Route>
+          <Route path="/landing" element={<Landing/>}></Route>
+          <Route path="/demo" element={<Kan name="demo"/>}></Route>
         </Routes>
       </div>
     </Router>
