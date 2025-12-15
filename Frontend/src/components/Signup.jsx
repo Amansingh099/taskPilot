@@ -31,7 +31,7 @@ export default function Signup() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-
+      console.log("Response status:", response);
       if (!response.ok) {
         throw new Error("Signup failed");
       }
