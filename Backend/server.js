@@ -1,51 +1,44 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const cors = require('cors');
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
+
+import projectRouter from "./routes/project.js";
+import userRouter from "./routes/user.js";
+import taskRouter from "./routes/task.js";
+import loginRouter from "./routes/auth.js";
+import connectDB from "./config/db.js";
+
+dotenv.config();
+
 const app = express();
- 
-app.use(express.urlencoded({ extended: false }));
 
-const projectRouter=require('./routes/project')
-const userRouter=require('./routes/user')
-const taskRouter=require('./routes/task')
-const loginRouter = require('./routes/auth');
-dotenv.config(); 
-const cookieParser = require('cookie-parser');
-app.use(cookieParser());
+/* ===== MIDDLEWARE ===== */
 app.use(cors());
-
-// const corsOptions = {
-//     origin: '', 
-//     credentials: true, 
-// };
-const protect = require('./middleware/authmiddleware');
-
-
-// Use a sensible default so the server can start during local development
-const PORT = process.env.PORT || 5000;
 app.use(express.json());
-app.use('/', loginRouter);
-app.use('/project', projectRouter);
-app.use('/user', userRouter);
-app.use('/task', taskRouter);
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
 
-// Lightweight health check for quick diagnostics
-app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'ok', pid: process.pid });
+/* ===== DB CONNECTION (SERVERLESS SAFE) ===== */
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (err) {
+        console.error("DB connection failed:", err);
+        res.status(500).json({ message: "Database unavailable" });
+    }
 });
 
-// app.use('/dashboard', protect, jobRouter);
+/* ===== ROUTES ===== */
+app.use("/", loginRouter);
+app.use("/project", projectRouter);
+app.use("/user", userRouter);
+app.use("/task", taskRouter);
 
-// Database Connection
-mongoose.connect(process.env.MONGO_URI, ).then(() => {
-    console.log('MongoDB connected');
-}).catch((err) => {
-    console.error('MongoDB connection error:', err);
+/* ===== HEALTH ===== */
+app.get("/health", (req, res) => {
+    res.status(200).json({ status: "ok" });
 });
 
-// Start Server
-// app.listen(PORT, () => {
-//     console.log(`Server running on port ${PORT}`);
-// });
 export default app;
